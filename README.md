@@ -43,9 +43,16 @@ Sem internet, sem contas e sem nuvem.
 | Receptor | [`AndroidTV/`](AndroidTV) | Kotlin, Jetpack Compose for TV, WebRTC |
 | Documentação | [`Documentation/`](Documentation) | Arquitetura, decisões e plano de desenvolvimento |
 
+## Download
+
+Baixe na página de [**Releases**](https://github.com/felipe-rosa94/localcast/releases/latest):
+
+- `LocalCast-Setup.exe`: instalador para Windows
+- `LocalCast-TV.apk`: app para Android TV
+
 ## Como usar
 
-1. Instale o app da TV (`AndroidTV/`, pelo Android Studio). Ele mostra o IP e o PIN.
+1. Instale o `LocalCast-TV.apk` na TV. Ele mostra o IP e o PIN.
 2. No Windows, instale o `LocalCast-Setup.exe`, escolha a TV e digite o PIN.
 3. A tela do PC aparece na TV.
 
