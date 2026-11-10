@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.20)
+project(localcast_rtc LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+add_library(localcast_rtc SHARED src/localcast_rtc.cpp)
+target_include_directories(localcast_rtc PUBLIC include)
+target_compile_definitions(localcast_rtc PRIVATE LOCALCAST_EXPORTS)

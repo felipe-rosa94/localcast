@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LocalCast TV</string>
+    <string name="ready_message">Pronto para receber uma transmissão</string>
+    <string name="tv_name">LocalCast TV - Sala de reuniões</string>
+    <string name="pin_label">PIN</string>
+    <string name="pin_placeholder">----</string>
+    <string name="state_waiting">Aguardando conexão...</string>
+</resources>
