@@ -12,6 +12,9 @@ local.properties
 *.user
 *.apk
 *.aab
+*.jks
+*.keystore
+keystore.properties
 
 **/tools/ffmpeg/
 **/dist/

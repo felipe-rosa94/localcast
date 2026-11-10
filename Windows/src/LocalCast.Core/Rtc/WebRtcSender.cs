@@ -1,4 +1,5 @@
 using System.Text.Json;
+using LocalCast.Core.Audio;
 using LocalCast.Core.Video;
 using SIPSorcery.Net;
 using SIPSorceryMedia.Abstractions;
@@ -8,6 +9,7 @@ namespace LocalCast.Core.Rtc;
 public sealed class WebRtcSender : IDisposable
 {
     private const string H264Fmtp = "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f";
+    private const string OpusFmtp = "minptime=10;useinbandfec=1;stereo=1;sprop-stereo=1";
 
     private readonly RTCPeerConnection _pc;
     private volatile bool _connected;
@@ -25,6 +27,9 @@ public sealed class WebRtcSender : IDisposable
         var format = new VideoFormat(VideoCodecsEnum.H264, FfmpegVideoPipeline.PayloadType, 90000, H264Fmtp);
         var track = new MediaStreamTrack(new List<VideoFormat> { format }, MediaStreamStatusEnum.SendOnly);
         _pc.addTrack(track);
+
+        var opus = new AudioFormat(AudioCodecsEnum.OPUS, FfmpegAudioPipeline.PayloadType, 48000, 2, OpusFmtp);
+        _pc.addTrack(new MediaStreamTrack(new List<AudioFormat> { opus }, MediaStreamStatusEnum.SendOnly));
 
         _pc.onicecandidate += candidate =>
         {
@@ -100,6 +105,12 @@ public sealed class WebRtcSender : IDisposable
     {
         if (!_connected) return;
         _pc.SendRtpRaw(SDPMediaTypesEnum.video, packet.Payload, packet.Timestamp, packet.Marker ? 1 : 0, packet.PayloadType);
+    }
+
+    public void SendAudioRtp(RtpPacket packet)
+    {
+        if (!_connected) return;
+        _pc.SendRtpRaw(SDPMediaTypesEnum.audio, packet.Payload, packet.Timestamp, packet.Marker ? 1 : 0, packet.PayloadType);
     }
 
     public void Dispose()

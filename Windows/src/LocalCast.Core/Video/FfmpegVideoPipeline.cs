@@ -318,7 +318,7 @@ public sealed class FfmpegVideoPipeline : IVideoPipeline
         return (false, string.IsNullOrEmpty(tail) ? "sem pacotes de vídeo em 6 s" : tail);
     }
 
-    private static void KillProcess(Process? proc)
+    internal static void KillProcess(Process? proc)
     {
         if (proc == null) return;
         try

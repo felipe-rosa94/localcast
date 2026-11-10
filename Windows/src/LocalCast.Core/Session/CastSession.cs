@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using LocalCast.Core.Audio;
 using LocalCast.Core.Capture;
 using LocalCast.Core.Discovery;
 using LocalCast.Core.Encoder;
@@ -24,6 +25,7 @@ public class CastSession : IAsyncDisposable
     private readonly IScreenCapture? _capture;
     private readonly IHardwareEncoder? _encoder;
     private readonly IVideoPipeline? _pipeline;
+    private readonly FfmpegAudioPipeline? _audio;
     private readonly StreamSettings _settings;
     private readonly int _bitrateKbps;
 
@@ -68,11 +70,13 @@ public class CastSession : IAsyncDisposable
         SignalingClient signaling,
         IVideoPipeline pipeline,
         StreamSettings? settings = null,
-        int bitrateKbps = 10000)
+        int bitrateKbps = 10000,
+        FfmpegAudioPipeline? audio = null)
     {
         _tv = tv;
         _signaling = signaling;
         _pipeline = pipeline;
+        _audio = audio;
         _settings = settings ?? StreamSettings.Default;
         _bitrateKbps = bitrateKbps;
 
@@ -120,6 +124,11 @@ public class CastSession : IAsyncDisposable
         _signaling.IceCandidateReceived += OnRemoteIceCandidate;
         pipeline.PacketArrived += OnRtpPacket;
         pipeline.Failed += Fail;
+        if (_audio != null)
+        {
+            _audio.PacketArrived += OnAudioPacket;
+            _audio.Failed += OnAudioFailed;
+        }
 
         _stopwatch.Restart();
         IsActive = true;
@@ -186,7 +195,23 @@ public class CastSession : IAsyncDisposable
             var (ok, error) = await _pipeline!.StartAsync(_settings, _bitrateKbps);
             if (!ok) Fail(error ?? "Falha ao iniciar a captura de tela.");
         });
+
+        if (_audio == null) return;
+        _ = Task.Run(async () =>
+        {
+            var (ok, error) = await _audio.StartAsync();
+            if (!ok) OnAudioFailed(error ?? "Falha ao iniciar o áudio.");
+        });
     }
+
+    private void OnAudioPacket(RtpPacket packet)
+    {
+        if (!IsActive) return;
+        _rtc?.SendAudioRtp(packet);
+        Interlocked.Add(ref _bytesSent, packet.WireLength);
+    }
+
+    private void OnAudioFailed(string message) => Debug.WriteLine("[LocalCast] áudio desativado: " + message);
 
     private void OnRtpPacket(RtpPacket packet)
     {
@@ -289,6 +314,13 @@ public class CastSession : IAsyncDisposable
             _pipeline.Stop();
         }
 
+        if (_audio != null)
+        {
+            _audio.PacketArrived -= OnAudioPacket;
+            _audio.Failed -= OnAudioFailed;
+            _audio.Stop();
+        }
+
         if (_rtc != null)
         {
             _signaling.AnswerReceived -= OnAnswerReceived;
@@ -308,6 +340,7 @@ public class CastSession : IAsyncDisposable
         _capture?.Dispose();
         _encoder?.Dispose();
         _pipeline?.Dispose();
+        _audio?.Dispose();
         await _signaling.DisposeAsync();
     }
 }

@@ -1,7 +1,10 @@
 package com.localcast.tv.webrtc
 
 import android.content.Context
+import android.media.AudioAttributes
 import android.util.Log
+import org.webrtc.AudioTrack
+import org.webrtc.audio.JavaAudioDeviceModule
 import org.webrtc.DefaultVideoDecoderFactory
 import org.webrtc.DefaultVideoEncoderFactory
 import org.webrtc.EglBase
@@ -23,10 +26,33 @@ fun createPeerConnectionFactory(context: Context, eglBase: EglBase): PeerConnect
             .setFieldTrials("WebRTC-ForcePlayoutDelay/min_ms:0,max_ms:40/")
             .createInitializationOptions()
     )
-    return PeerConnectionFactory.builder()
+    val audioDeviceModule = JavaAudioDeviceModule.builder(context.applicationContext)
+        .setAudioAttributes(
+            AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .build()
+        )
+        .setUseStereoOutput(true)
+        .setUseHardwareAcousticEchoCanceler(false)
+        .setUseHardwareNoiseSuppressor(false)
+        .createAudioDeviceModule()
+    val factory = PeerConnectionFactory.builder()
+        .setAudioDeviceModule(audioDeviceModule)
         .setVideoDecoderFactory(DefaultVideoDecoderFactory(eglBase.eglBaseContext))
         .setVideoEncoderFactory(DefaultVideoEncoderFactory(eglBase.eglBaseContext, true, true))
         .createPeerConnectionFactory()
+    audioDeviceModule.release()
+    return factory
+}
+
+private val opusRtpmap = Regex("""a=rtpmap:(\d+) opus/48000""", RegexOption.IGNORE_CASE)
+
+internal fun enableOpusStereo(sdp: String): String {
+    val pt = opusRtpmap.find(sdp)?.groupValues?.get(1) ?: return sdp
+    return sdp.split("\r\n").joinToString("\r\n") { line ->
+        if (line.startsWith("a=fmtp:$pt ") && !line.contains("stereo=1")) "$line;stereo=1;sprop-stereo=1" else line
+    }
 }
 
 class WebRtcReceiver(
@@ -79,6 +105,9 @@ class WebRtcReceiver(
                     track.setEnabled(true)
                     track.addSink(renderer)
                 }
+            } else if (track is AudioTrack) {
+                Log.i(tag, "Audio track received")
+                track.setEnabled(true)
             }
         }
     }
@@ -103,11 +132,12 @@ class WebRtcReceiver(
                 pc.createAnswer(object : LoggingSdpObserver("createAnswer") {
                     override fun onCreateSuccess(description: SessionDescription?) {
                         if (description == null) return
+                        val answer = SessionDescription(description.type, enableOpusStereo(description.description))
                         pc.setLocalDescription(object : LoggingSdpObserver("setLocal") {
                             override fun onSetSuccess() {
-                                onAnswer(description.description)
+                                onAnswer(answer.description)
                             }
-                        }, description)
+                        }, answer)
                     }
                 }, MediaConstraints())
             }

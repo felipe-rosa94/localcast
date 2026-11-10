@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Threading;
+using LocalCast.Core.Audio;
 using LocalCast.Core.Capture;
 using LocalCast.Core.Discovery;
 using LocalCast.Core.Encoder;
@@ -241,7 +242,12 @@ public class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
             Log = msg => System.Diagnostics.Debug.WriteLine("[LocalCast] " + msg)
         };
 
-        _activeSession = new CastSession(SelectedTv, signaling, pipeline);
+        var audio = new FfmpegAudioPipeline
+        {
+            Log = msg => System.Diagnostics.Debug.WriteLine("[LocalCast] " + msg)
+        };
+
+        _activeSession = new CastSession(SelectedTv, signaling, pipeline, audio: audio);
         _activeSession.MetricsUpdated += OnMetricsUpdated;
         _activeSession.Disconnected += OnSessionDisconnected;
 
