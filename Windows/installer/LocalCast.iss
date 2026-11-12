@@ -1,5 +1,5 @@
 #define AppName "LocalCast"
-#define AppVersion "0.3.0"
+#define AppVersion "0.3.1"
 #define AppExe "LocalCast.App.exe"
 
 [Setup]
@@ -18,6 +18,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=admin
 WizardStyle=modern
 UninstallDisplayIcon={app}\{#AppExe}
+SetupIconFile=..\src\LocalCast.App\Assets\app.ico
 CloseApplications=yes
 
 [Languages]

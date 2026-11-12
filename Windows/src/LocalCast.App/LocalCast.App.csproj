@@ -4,9 +4,13 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <RootNamespace>LocalCast.App</RootNamespace>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\..\tools\ffmpeg\**\*" Link="tools\ffmpeg\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\app.ico" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LocalCast.Core\LocalCast.Core.csproj" />
