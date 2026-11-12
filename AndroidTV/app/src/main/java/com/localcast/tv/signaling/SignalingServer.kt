@@ -11,12 +11,16 @@ import java.util.UUID
 
 class SignalingServer(
     port: Int = 8765,
-    private val tvName: String,
+    @Volatile var tvName: String,
     private val pinManager: PinManager,
     private val listener: Listener
 ) : WebSocketServer(InetSocketAddress(port)) {
 
     private val tag = "SignalingServer"
+
+    init {
+        isReuseAddr = true
+    }
 
     interface Listener {
         fun onAuthSuccess(clientName: String)

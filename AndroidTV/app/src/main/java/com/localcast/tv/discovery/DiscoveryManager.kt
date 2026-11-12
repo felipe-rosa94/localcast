@@ -19,9 +19,9 @@ class DiscoveryManager(private val context: Context) {
     private var multicastLock: WifiManager.MulticastLock? = null
     private var registrationListener: NsdManager.RegistrationListener? = null
     private var currentPort: Int = 8765
-    private var currentTvName: String = "LocalCast TV"
+    @Volatile private var currentTvName: String = "LocalCast TV"
     private var isRegistered = false
-    private var isBusyState = false
+    @Volatile private var isBusyState = false
     @Volatile
     private var isRunning = false
     private var beaconThread: Thread? = null
@@ -117,6 +117,13 @@ class DiscoveryManager(private val context: Context) {
             } finally {
                 socket?.close()
             }
+        }
+    }
+
+    fun updateName(tvName: String) {
+        currentTvName = tvName
+        if (isRegistered) {
+            registerService(currentPort, tvName, isBusyState)
         }
     }
 
