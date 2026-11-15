@@ -87,19 +87,29 @@ public sealed class FfmpegVideoPipeline : IVideoPipeline
         OpenSocket(out int port);
 
         var errors = new StringBuilder();
-        foreach (var candidate in candidates)
+        var captureModes = hasDdagrab ? new[] { true, false } : new[] { false };
+        foreach (var useDdagrab in captureModes)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var (ok, tail) = await TryLaunchAsync(ffmpeg, candidate, hasDdagrab, settings, bitrateKbps, port, cancellationToken);
-            if (ok)
+            foreach (var candidate in candidates)
             {
-                ActiveEncoder = candidate.Label;
-                Log?.Invoke($"ffmpeg ativo: {candidate.Label} ({(hasDdagrab ? "ddagrab" : "gdigrab")})");
-                return (true, null);
-            }
+                cancellationToken.ThrowIfCancellationRequested();
+                var capture = useDdagrab ? "ddagrab" : "gdigrab";
+                var (ok, tail) = await TryLaunchAsync(ffmpeg, candidate, useDdagrab, settings, bitrateKbps, port, cancellationToken);
+                if (ok)
+                {
+                    ActiveEncoder = candidate.Label;
+                    Log?.Invoke($"ffmpeg ativo: {candidate.Label} ({capture})");
+                    return (true, null);
+                }
 
-            Log?.Invoke($"encoder {candidate.Label} falhou: {tail}");
-            errors.AppendLine($"{candidate.Label}: {tail}");
+                Log?.Invoke($"encoder {candidate.Label} ({capture}) falhou: {tail}");
+                errors.AppendLine($"{candidate.Label} ({capture}): {tail}");
+
+                if (useDdagrab && tail.Contains("Selected output not supported", StringComparison.OrdinalIgnoreCase))
+                {
+                    break;
+                }
+            }
         }
 
         Stop();
