@@ -1,5 +1,5 @@
 #define AppName "LocalCast"
-#define AppVersion "0.3.2"
+#define AppVersion "0.3.3"
 #define AppExe "LocalCast.App.exe"
 
 [Setup]
