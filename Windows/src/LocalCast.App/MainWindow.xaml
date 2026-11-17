@@ -234,6 +234,11 @@
                              InputMethod.IsInputMethodEnabled="False" Padding="12,10"
                              PreviewTextInput="OnPinPreviewTextInput" KeyDown="OnPinKeyDown" />
 
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,0">
+                        <RadioButton Content="Alta (1080p)" IsChecked="{Binding HighQuality}" Foreground="White" Margin="0,0,18,0" />
+                        <RadioButton Content="Leve (720p, aparelho fraco)" IsChecked="{Binding LightQuality}" Foreground="White" />
+                    </StackPanel>
+
                     <TextBlock Text="{Binding PairingErrorMessage}" FontSize="12" Margin="0,14,0,0" TextWrapping="Wrap"
                                HorizontalAlignment="Center" TextAlignment="Center" MinHeight="16">
                         <TextBlock.Style>

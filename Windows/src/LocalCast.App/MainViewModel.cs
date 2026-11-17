@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Threading;
+using LocalCast.Core;
 using LocalCast.Core.Audio;
 using LocalCast.Core.Capture;
 using LocalCast.Core.Discovery;
@@ -46,6 +47,26 @@ public class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
     {
         get => _isScanning;
         set => SetField(ref _isScanning, value);
+    }
+
+    private bool _lightQuality;
+
+    public bool LightQuality
+    {
+        get => _lightQuality;
+        set
+        {
+            if (_lightQuality == value) return;
+            _lightQuality = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LightQuality)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HighQuality)));
+        }
+    }
+
+    public bool HighQuality
+    {
+        get => !_lightQuality;
+        set => LightQuality = !value;
     }
 
     public bool IsStreaming
@@ -247,7 +268,9 @@ public class MainViewModel : INotifyPropertyChanged, IAsyncDisposable
             Log = msg => System.Diagnostics.Debug.WriteLine("[LocalCast] " + msg)
         };
 
-        _activeSession = new CastSession(SelectedTv, signaling, pipeline, audio: audio);
+        _activeSession = LightQuality
+            ? new CastSession(SelectedTv, signaling, pipeline, StreamSettings.Light, StreamSettings.LightBitrateKbps, audio)
+            : new CastSession(SelectedTv, signaling, pipeline, audio: audio);
         _activeSession.MetricsUpdated += OnMetricsUpdated;
         _activeSession.Disconnected += OnSessionDisconnected;
 

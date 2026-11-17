@@ -20,6 +20,8 @@ public sealed class FfmpegAudioPipeline : IDisposable
     private Stream? _stdin;
     private WasapiLoopbackCapture? _capture;
     private WasapiOut? _silence;
+    private MMDevice? _volumeDevice;
+    private bool _wasMuted;
     private volatile TaskCompletionSource<bool>? _firstPacket;
     private volatile bool _stopping;
 
@@ -31,7 +33,11 @@ public sealed class FfmpegAudioPipeline : IDisposable
     public FfmpegAudioPipeline(string? ffmpegPath = null)
     {
         _ffmpegHint = ffmpegPath;
-        AppDomain.CurrentDomain.ProcessExit += (_, _) => FfmpegVideoPipeline.KillProcess(_proc);
+        AppDomain.CurrentDomain.ProcessExit += (_, _) =>
+        {
+            RestoreMute();
+            FfmpegVideoPipeline.KillProcess(_proc);
+        };
     }
 
     public async Task<(bool Ok, string? Error)> StartAsync(CancellationToken cancellationToken = default)
@@ -128,6 +134,18 @@ public sealed class FfmpegAudioPipeline : IDisposable
 
             capture.StartRecording();
 
+            try
+            {
+                var volume = device.AudioEndpointVolume;
+                _wasMuted = volume.Mute;
+                _volumeDevice = device;
+                if (!_wasMuted) volume.Mute = true;
+            }
+            catch (Exception ex)
+            {
+                Log?.Invoke("não foi possível silenciar o áudio local: " + ex.Message);
+            }
+
             var finished = await Task.WhenAny(firstPacket.Task, Task.Delay(4000, cancellationToken));
             if (finished == firstPacket.Task && firstPacket.Task.Result)
             {
@@ -149,6 +167,8 @@ public sealed class FfmpegAudioPipeline : IDisposable
     public void Stop()
     {
         _stopping = true;
+
+        RestoreMute();
 
         var capture = _capture;
         _capture = null;
@@ -184,6 +204,18 @@ public sealed class FfmpegAudioPipeline : IDisposable
     }
 
     public void Dispose() => Stop();
+
+    private void RestoreMute()
+    {
+        var device = _volumeDevice;
+        _volumeDevice = null;
+        if (device == null) return;
+        try
+        {
+            if (!_wasMuted) device.AudioEndpointVolume.Mute = false;
+        }
+        catch { }
+    }
 
     private void OnDataAvailable(object? sender, WaveInEventArgs e)
     {
